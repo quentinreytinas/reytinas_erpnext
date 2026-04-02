@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reytinas_erpnext"
+version = "0.1.0"
+description = "Reytinas custom ERPNext app"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "Quentin Reytinas" }
+]
+dynamic = ["dependencies"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.packages.find]
+include = ["reytinas_erpnext*"]
