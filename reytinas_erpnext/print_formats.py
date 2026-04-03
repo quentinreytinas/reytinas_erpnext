@@ -207,6 +207,8 @@ PRINT_FORMAT_CSS = """
   color: #3f3a34;
   font-size: 11px;
   line-height: 1.45;
+  orphans: 3;
+  widows: 3;
 }
 
 .rt-header {
@@ -216,6 +218,10 @@ PRINT_FORMAT_CSS = """
   gap: 22px;
   padding: 18px 4px 24px;
   border-bottom: 2px solid #e8dac4;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  break-after: avoid;
+  page-break-after: avoid;
 }
 
 .rt-brand-block {
@@ -287,6 +293,8 @@ PRINT_FORMAT_CSS = """
   border-radius: 18px;
   border: 1px solid #e8dac4;
   background: #fcfaf6;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .rt-meta-row,
@@ -327,6 +335,8 @@ PRINT_FORMAT_CSS = """
 
 .rt-party-grid {
   margin-top: 20px;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .rt-party-card,
@@ -340,6 +350,8 @@ PRINT_FORMAT_CSS = """
 .rt-party-card {
   width: 50%;
   padding: 16px 18px;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .rt-section-title {
@@ -348,6 +360,8 @@ PRINT_FORMAT_CSS = """
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: #9a7b53;
+  break-after: avoid;
+  page-break-after: avoid;
 }
 
 .rt-party-name {
@@ -380,6 +394,16 @@ PRINT_FORMAT_CSS = """
   border: 1px solid #eadfce;
   border-radius: 16px;
   overflow: hidden;
+  page-break-inside: auto;
+  break-inside: auto;
+}
+
+.rt-items thead {
+  display: table-header-group;
+}
+
+.rt-items tbody {
+  display: table-row-group;
 }
 
 .rt-items thead th {
@@ -397,6 +421,12 @@ PRINT_FORMAT_CSS = """
   padding: 14px;
   vertical-align: top;
   border-bottom: 1px solid #f1e8da;
+}
+
+.rt-items tbody tr,
+.rt-items tbody td {
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .rt-items tbody tr:last-child td {
@@ -427,6 +457,8 @@ PRINT_FORMAT_CSS = """
   font-size: 11px;
   font-weight: 700;
   color: #1f2937;
+  break-after: avoid;
+  page-break-after: avoid;
 }
 
 .rt-item-description {
@@ -453,6 +485,8 @@ PRINT_FORMAT_CSS = """
 .rt-notes {
   width: 58%;
   padding: 16px 18px;
+  page-break-inside: auto;
+  break-inside: auto;
 }
 
 .rt-terms .ql-editor,
@@ -461,6 +495,14 @@ PRINT_FORMAT_CSS = """
   padding: 0 !important;
   margin: 0 0 4px !important;
   line-height: 1.35;
+  orphans: 3;
+  widows: 3;
+}
+
+.rt-terms p,
+.rt-terms li {
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .rt-terms strong {
@@ -478,6 +520,8 @@ PRINT_FORMAT_CSS = """
   width: 38%;
   padding: 12px 16px 14px;
   background: #fcfaf6;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .rt-total-row {
@@ -498,12 +542,16 @@ PRINT_FORMAT_CSS = """
   background: #f8f1e5;
   color: #1f2937;
   font-size: 13px;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .rt-footer {
   margin-top: 22px;
   padding-top: 12px;
   border-top: 1px solid #e8dac4;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .rt-footer-note {
@@ -522,12 +570,80 @@ PRINT_FORMAT_CSS = """
 }
 
 @media print {
+  .rt-header {
+    padding-top: 0;
+  }
+
+  .rt-party-grid {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+    border-spacing: 20px 0;
+    margin-left: -20px;
+    margin-right: -20px;
+  }
+
+  .rt-party-card {
+    display: table-cell;
+    width: 50%;
+  }
+
+  .rt-items {
+    overflow: visible;
+  }
+
+  .rt-items thead {
+    display: table-header-group;
+  }
+
+  .rt-items tfoot {
+    display: table-footer-group;
+  }
+
+  .rt-items tr,
+  .rt-items td,
+  .rt-items th {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .rt-bottom-grid {
+    display: block;
+  }
+
+  .rt-notes {
+    width: auto;
+  }
+
+  .rt-terms,
+  .rt-terms .ql-editor {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .rt-totals-card {
+    width: 44%;
+    min-width: 260px;
+    margin: 16px 0 0 auto;
+  }
+
   .rt-header,
   .rt-party-card,
   .rt-items,
   .rt-totals-card,
-  .rt-notes {
+  .rt-footer,
+  .rt-meta-card,
+  .rt-grand-total {
     break-inside: avoid;
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+
+  .rt-section-title,
+  .rt-item-name,
+  .rt-footer-note {
+    break-after: avoid;
+    page-break-after: avoid;
   }
 }
 """
