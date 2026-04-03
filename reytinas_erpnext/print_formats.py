@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import frappe
 
 
@@ -25,9 +27,21 @@ PRINT_FORMAT_HTML = """
 {% set company = frappe.db.get_value(
   "Company",
   doc.company,
-  ["company_name", "company_logo", "tax_id", "email", "phone_no", "website"],
+  [
+    "company_name",
+    "company_logo",
+    "siret",
+    "tax_id",
+    "email",
+    "phone_no",
+    "website",
+  ],
   as_dict=True,
 ) or {} %}
+{% set siret = company.siret or "" %}
+{% if siret and " " not in siret and siret | length == 14 %}
+  {% set siret = siret[:3] ~ " " ~ siret[3:6] ~ " " ~ siret[6:9] ~ " " ~ siret[9:] %}
+{% endif %}
 {% set bank_accounts = frappe.db.get_all(
   "Bank Account",
   filters={"company": doc.company, "is_company_account": 1},
@@ -35,7 +49,6 @@ PRINT_FORMAT_HTML = """
   limit=1,
 ) %}
 {% set bank = bank_accounts[0] if bank_accounts else None %}
-{% set siret = "521 301 457 00052" if doc.company == "Quentin Reytinas" else "" %}
 
 <section class="rt-print">
   <header class="rt-header">
@@ -703,7 +716,9 @@ PRINT_FORMAT_CSS = """
 """
 
 
-def sync_print_formats() -> None:
+def sync_print_formats(force: bool = False) -> None:
+    """Create managed Print Formats once, and only overwrite when explicitly forced."""
+
     for config in PRINT_FORMATS:
         values = {
             "doctype": "Print Format",
@@ -732,6 +747,9 @@ def sync_print_formats() -> None:
             "print_format_builder_beta": 0,
         }
 
+        if frappe.db.exists("Print Format", config["name"]) and not force:
+            continue
+
         if frappe.db.exists("Print Format", config["name"]):
             print_format = frappe.get_doc("Print Format", config["name"])
             print_format.update(values)
@@ -741,3 +759,37 @@ def sync_print_formats() -> None:
             print_format.insert(ignore_permissions=True)
 
     frappe.db.commit()
+
+
+def export_print_formats(
+    output_path: str = "/tmp/reytinas-print-formats.json",
+) -> dict[str, object]:
+    rows = []
+
+    for config in PRINT_FORMATS:
+        if not frappe.db.exists("Print Format", config["name"]):
+            continue
+
+        print_format = frappe.get_doc("Print Format", config["name"])
+        rows.append(
+            {
+                "name": print_format.name,
+                "doc_type": print_format.doc_type,
+                "module": print_format.module,
+                "print_format_type": print_format.print_format_type,
+                "custom_format": print_format.custom_format,
+                "disabled": print_format.disabled,
+                "html": print_format.html,
+                "css": print_format.css,
+            }
+        )
+
+    Path(output_path).write_text(
+        frappe.as_json(rows, indent=2),
+        encoding="utf-8",
+    )
+
+    return {
+        "output_path": output_path,
+        "count": len(rows),
+    }
