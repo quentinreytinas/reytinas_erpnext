@@ -1,0 +1,20 @@
+[
+  {
+    "doc_type": "Quotation",
+    "doctype_or_field": "DocField",
+    "field_name": "naming_series",
+    "name": "Quotation-naming_series-default",
+    "property": "default",
+    "property_type": "Data",
+    "value": "Devis-.YYYY.-"
+  },
+  {
+    "doc_type": "Quotation",
+    "doctype_or_field": "DocField",
+    "field_name": "naming_series",
+    "name": "Quotation-naming_series-options",
+    "property": "options",
+    "property_type": "Text",
+    "value": "Devis-.YYYY.-\nSAL-QTN-.YYYY.-"
+  }
+]
