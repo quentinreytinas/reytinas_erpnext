@@ -22,7 +22,6 @@ PRINT_FORMAT_HTML = """
 {% set date_field = "transaction_date" if is_quote else "posting_date" %}
 {% set due_field = "valid_till" if is_quote else "due_date" %}
 {% set title = "DEVIS" if is_quote else "FACTURE" %}
-{% set reference_label = "Devis" if is_quote else "Facture" %}
 {% set company = frappe.db.get_value(
   "Company",
   doc.company,
@@ -59,10 +58,6 @@ PRINT_FORMAT_HTML = """
     <div class="rt-meta-card">
       <div class="rt-eyebrow">{{ title }}</div>
       <h1 class="rt-doc-name">{{ doc.name }}</h1>
-      <div class="rt-meta-row">
-        <span>{{ reference_label }}</span>
-        <strong>{{ doc.name }}</strong>
-      </div>
       <div class="rt-meta-row">
         <span>Date</span>
         <strong>{{ doc.get_formatted(date_field) }}</strong>
