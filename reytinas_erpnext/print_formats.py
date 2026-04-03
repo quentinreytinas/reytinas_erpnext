@@ -23,20 +23,42 @@ PRINT_FORMAT_HTML = """
 {% set due_field = "valid_till" if is_quote else "due_date" %}
 {% set title = "DEVIS" if is_quote else "FACTURE" %}
 {% set reference_label = "Devis" if is_quote else "Facture" %}
-{% set customer_label = "Client" %}
+{% set company = frappe.db.get_value(
+  "Company",
+  doc.company,
+  ["company_name", "company_logo", "tax_id", "email", "phone_no", "website"],
+  as_dict=True,
+) or {} %}
+{% set bank_accounts = frappe.db.get_all(
+  "Bank Account",
+  filters={"company": doc.company, "is_company_account": 1},
+  fields=["bank", "iban", "bank_account_no", "account_name"],
+  limit=1,
+) %}
+{% set bank = bank_accounts[0] if bank_accounts else None %}
+{% set siret = "521 301 457 00052" if doc.company == "Quentin Reytinas" else "" %}
 
 <section class="rt-print">
   <header class="rt-header">
     <div class="rt-brand-block">
-      <div class="rt-eyebrow">{{ title }}</div>
-      <h1 class="rt-doc-name">{{ doc.name }}</h1>
-      <div class="rt-company-name">{{ doc.company }}</div>
-      {% if doc.company_address_display %}
-        <div class="rt-company-address">{{ doc.company_address_display }}</div>
-      {% endif %}
+      <div class="rt-brand-row">
+        {% if company.company_logo %}
+          <img class="rt-logo" src="{{ frappe.utils.get_url(company.company_logo) }}" alt="{{ doc.company }}">
+        {% else %}
+          <div class="rt-logo-fallback">{{ doc.company[:2] }}</div>
+        {% endif %}
+        <div class="rt-company-wrap">
+          <div class="rt-company-name">{{ company.company_name or doc.company }}</div>
+          {% if doc.company_address_display %}
+            <div class="rt-company-address">{{ doc.company_address_display }}</div>
+          {% endif %}
+        </div>
+      </div>
     </div>
 
     <div class="rt-meta-card">
+      <div class="rt-eyebrow">{{ title }}</div>
+      <h1 class="rt-doc-name">{{ doc.name }}</h1>
       <div class="rt-meta-row">
         <span>{{ reference_label }}</span>
         <strong>{{ doc.name }}</strong>
@@ -61,14 +83,25 @@ PRINT_FORMAT_HTML = """
   <section class="rt-party-grid">
     <div class="rt-party-card">
       <div class="rt-section-title">Émis par</div>
-      <div class="rt-party-name">{{ doc.company }}</div>
+      <div class="rt-party-name">{{ company.company_name or doc.company }}</div>
       {% if doc.company_address_display %}
         <div class="rt-party-address">{{ doc.company_address_display }}</div>
       {% endif %}
+      <div class="rt-party-extra">
+        {% if company.email %}
+          <div>{{ company.email }}</div>
+        {% endif %}
+        {% if company.phone_no %}
+          <div>{{ company.phone_no }}</div>
+        {% endif %}
+        {% if company.website %}
+          <div>{{ company.website }}</div>
+        {% endif %}
+      </div>
     </div>
 
     <div class="rt-party-card">
-      <div class="rt-section-title">{{ customer_label }}</div>
+      <div class="rt-section-title">Client</div>
       <div class="rt-party-name">
         {{ doc.customer_name or doc.party_name or doc.customer or doc.name }}
       </div>
@@ -112,7 +145,7 @@ PRINT_FORMAT_HTML = """
   <section class="rt-bottom-grid">
     <div class="rt-notes">
       {% if doc.terms %}
-        <div class="rt-section-title">Conditions</div>
+        <div class="rt-section-title">Conditions & CGV</div>
         <div class="rt-terms">{{ doc.terms }}</div>
       {% endif %}
       {% if doc.in_words %}
@@ -141,11 +174,21 @@ PRINT_FORMAT_HTML = """
   </section>
 
   <footer class="rt-footer">
-    {% if is_quote %}
-      <span>Merci pour votre confiance. Ce devis reste valable jusqu'à la date indiquée ci-dessus.</span>
-    {% else %}
-      <span>Merci pour votre confiance. Merci de rappeler le numéro de facture lors de votre règlement.</span>
-    {% endif %}
+    <div class="rt-footer-note">
+      {% if is_quote %}
+        Merci pour votre confiance. Ce devis reste valable jusqu'à la date indiquée ci-dessus.
+      {% else %}
+        Merci de rappeler le numéro de facture lors de votre règlement.
+      {% endif %}
+    </div>
+    <div class="rt-footer-legal">
+      <span>{{ company.company_name or doc.company }}</span>
+      {% if siret %}<span>SIRET {{ siret }}</span>{% endif %}
+      {% if company.tax_id %}<span>TVA {{ company.tax_id }}</span>{% endif %}
+      {% if bank and (bank.iban or bank.bank_account_no) %}
+        <span>{{ bank.bank or "Banque" }} · {{ bank.iban or bank.bank_account_no }}</span>
+      {% endif %}
+    </div>
   </footer>
 </section>
 """
@@ -161,7 +204,7 @@ PRINT_FORMAT_CSS = """
 }
 
 .rt-print {
-  color: #0f172a;
+  color: #3f3a34;
   font-size: 11px;
   line-height: 1.45;
 }
@@ -169,15 +212,45 @@ PRINT_FORMAT_CSS = """
 .rt-header {
   display: flex;
   justify-content: space-between;
-  gap: 24px;
-  padding: 24px 24px 22px;
-  border-radius: 18px;
-  background: #0f172a;
-  color: #f8fafc;
+  align-items: flex-start;
+  gap: 22px;
+  padding: 18px 4px 24px;
+  border-bottom: 2px solid #e8dac4;
 }
 
 .rt-brand-block {
-  max-width: 58%;
+  max-width: 54%;
+}
+
+.rt-brand-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.rt-logo {
+  display: block;
+  max-width: 144px;
+  max-height: 76px;
+  object-fit: contain;
+}
+
+.rt-logo-fallback {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: #f6f0e6;
+  color: #9a7b53;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 68px;
+  text-align: center;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rt-company-wrap {
+  padding-top: 2px;
 }
 
 .rt-eyebrow {
@@ -185,33 +258,35 @@ PRINT_FORMAT_CSS = """
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #fbbf24;
+  color: #9a7b53;
 }
 
 .rt-doc-name {
-  margin: 10px 0 18px;
-  font-size: 28px;
+  margin: 8px 0 14px;
+  font-size: 25px;
   font-weight: 800;
-  line-height: 1;
-  color: #ffffff;
+  line-height: 1.05;
+  color: #1f2937;
 }
 
 .rt-company-name {
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 700;
+  color: #1f2937;
 }
 
 .rt-company-address {
   margin-top: 8px;
   font-size: 10px;
-  color: #cbd5e1;
+  color: #6b6258;
 }
 
 .rt-meta-card {
-  min-width: 220px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.08);
+  min-width: 240px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid #e8dac4;
+  background: #fcfaf6;
 }
 
 .rt-meta-row,
@@ -223,8 +298,8 @@ PRINT_FORMAT_CSS = """
 }
 
 .rt-meta-row {
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 7px 0;
+  border-bottom: 1px solid #ede5d7;
   font-size: 10px;
 }
 
@@ -233,14 +308,14 @@ PRINT_FORMAT_CSS = """
 }
 
 .rt-meta-row span {
-  color: #cbd5e1;
+  color: #8b8174;
   text-transform: uppercase;
   letter-spacing: 0.12em;
 }
 
 .rt-meta-row strong {
   font-size: 11px;
-  color: #ffffff;
+  color: #1f2937;
 }
 
 .rt-party-grid,
@@ -258,8 +333,8 @@ PRINT_FORMAT_CSS = """
 .rt-totals-card,
 .rt-notes {
   border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border: 1px solid #eadfce;
+  background: #fffdf9;
 }
 
 .rt-party-card {
@@ -272,24 +347,29 @@ PRINT_FORMAT_CSS = """
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #64748b;
+  color: #9a7b53;
 }
 
 .rt-party-name {
   margin-top: 10px;
   font-size: 14px;
   font-weight: 800;
-  color: #0f172a;
+  color: #1f2937;
 }
 
 .rt-party-address,
 .rt-party-ref,
+.rt-party-extra,
 .rt-terms,
 .rt-in-words,
 .rt-footer {
   margin-top: 8px;
   font-size: 10px;
-  color: #475569;
+  color: #6b6258;
+}
+
+.rt-party-extra {
+  line-height: 1.5;
 }
 
 .rt-items {
@@ -297,26 +377,26 @@ PRINT_FORMAT_CSS = """
   margin-top: 22px;
   border-collapse: separate;
   border-spacing: 0;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #eadfce;
   border-radius: 16px;
   overflow: hidden;
 }
 
 .rt-items thead th {
   padding: 13px 14px;
-  background: #f8fafc;
-  color: #334155;
+  background: #f7f2ea;
+  color: #6a5d4f;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #eadfce;
 }
 
 .rt-items tbody td {
   padding: 14px;
   vertical-align: top;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #f1e8da;
 }
 
 .rt-items tbody tr:last-child td {
@@ -340,25 +420,25 @@ PRINT_FORMAT_CSS = """
 .rt-idx {
   font-size: 10px;
   font-weight: 700;
-  color: #64748b;
+  color: #9a7b53;
 }
 
 .rt-item-name {
   font-size: 11px;
   font-weight: 700;
-  color: #0f172a;
+  color: #1f2937;
 }
 
 .rt-item-description {
   margin-top: 5px;
   font-size: 10px;
-  color: #475569;
+  color: #6b6258;
 }
 
 .rt-num {
   text-align: right;
   font-size: 11px;
-  color: #0f172a;
+  color: #1f2937;
 }
 
 .rt-nowrap {
@@ -375,40 +455,70 @@ PRINT_FORMAT_CSS = """
   padding: 16px 18px;
 }
 
+.rt-terms .ql-editor,
+.rt-terms div,
+.rt-terms p {
+  padding: 0 !important;
+  margin: 0 0 4px !important;
+  line-height: 1.35;
+}
+
+.rt-terms strong {
+  color: #4d463f;
+  font-weight: 600;
+}
+
 .rt-in-words {
   margin-top: 14px;
   font-style: italic;
+  color: #8b8174;
 }
 
 .rt-totals-card {
   width: 38%;
-  padding: 10px 16px 14px;
+  padding: 12px 16px 14px;
+  background: #fcfaf6;
 }
 
 .rt-total-row {
   padding: 10px 0;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #ede5d7;
   font-size: 11px;
 }
 
 .rt-total-row span {
-  color: #475569;
+  color: #6b6258;
 }
 
 .rt-grand-total {
   margin-top: 12px;
   padding: 14px 16px;
   border-radius: 12px;
-  background: #0f172a;
-  color: #ffffff;
+  border: 1px solid #d8c3a0;
+  background: #f8f1e5;
+  color: #1f2937;
   font-size: 13px;
 }
 
 .rt-footer {
-  margin-top: 24px;
+  margin-top: 22px;
   padding-top: 12px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid #e8dac4;
+}
+
+.rt-footer-note {
   text-align: center;
+  color: #5f574f;
+}
+
+.rt-footer-legal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 14px;
+  margin-top: 10px;
+  font-size: 9px;
+  color: #8b8174;
 }
 
 @media print {
