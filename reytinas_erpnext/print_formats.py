@@ -142,14 +142,20 @@ PRINT_FORMAT_HTML = """
     </tbody>
   </table>
 
-  <section class="rt-bottom-grid">
-    <div class="rt-notes">
-      {% if doc.terms %}
-        <div class="rt-section-title">Conditions & CGV</div>
-        <div class="rt-terms">{{ doc.terms }}</div>
-      {% endif %}
+  <section class="rt-summary-grid">
+    <div class="rt-summary-note-card">
       {% if doc.in_words %}
+        <div class="rt-section-title">Montant en toutes lettres</div>
         <div class="rt-in-words">{{ doc.in_words }}</div>
+      {% else %}
+        <div class="rt-section-title">Règlement</div>
+        <div class="rt-summary-note">
+          {% if is_quote %}
+            Le détail du total apparaît ci-contre. Le devis reste soumis aux conditions indiquées plus bas.
+          {% else %}
+            Le détail du total apparaît ci-contre. Merci de rappeler la référence de facture lors du règlement.
+          {% endif %}
+        </div>
       {% endif %}
     </div>
 
@@ -172,6 +178,13 @@ PRINT_FORMAT_HTML = """
       </div>
     </div>
   </section>
+
+  {% if doc.terms %}
+    <section class="rt-notes">
+      <div class="rt-section-title">Conditions & CGV</div>
+      <div class="rt-terms">{{ doc.terms }}</div>
+    </section>
+  {% endif %}
 
   <footer class="rt-footer">
     <div class="rt-footer-note">
@@ -327,7 +340,7 @@ PRINT_FORMAT_CSS = """
 }
 
 .rt-party-grid,
-.rt-bottom-grid {
+.rt-summary-grid {
   display: flex;
   justify-content: space-between;
   gap: 20px;
@@ -340,6 +353,7 @@ PRINT_FORMAT_CSS = """
 }
 
 .rt-party-card,
+.rt-summary-note-card,
 .rt-totals-card,
 .rt-notes {
   border-radius: 16px;
@@ -376,6 +390,7 @@ PRINT_FORMAT_CSS = """
 .rt-party-extra,
 .rt-terms,
 .rt-in-words,
+.rt-summary-note,
 .rt-footer {
   margin-top: 8px;
   font-size: 10px;
@@ -477,16 +492,36 @@ PRINT_FORMAT_CSS = """
   white-space: nowrap;
 }
 
-.rt-bottom-grid {
+.rt-summary-grid {
   margin-top: 20px;
   align-items: flex-start;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.rt-summary-note-card {
+  width: 58%;
+  padding: 16px 18px;
+  background: #fffdf9;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.rt-summary-note {
+  line-height: 1.45;
 }
 
 .rt-notes {
-  width: 58%;
-  padding: 16px 18px;
+  margin-top: 18px;
+  padding: 16px 18px 14px;
   page-break-inside: auto;
   break-inside: auto;
+}
+
+.rt-terms {
+  column-count: 2;
+  column-gap: 22px;
+  column-rule: 1px solid #efe6d8;
 }
 
 .rt-terms .ql-editor,
@@ -511,9 +546,10 @@ PRINT_FORMAT_CSS = """
 }
 
 .rt-in-words {
-  margin-top: 14px;
+  margin-top: 10px;
   font-style: italic;
   color: #8b8174;
+  line-height: 1.5;
 }
 
 .rt-totals-card {
@@ -607,12 +643,34 @@ PRINT_FORMAT_CSS = """
     page-break-inside: avoid;
   }
 
-  .rt-bottom-grid {
-    display: block;
+  .rt-summary-grid {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+    border-spacing: 20px 0;
+    margin-left: -20px;
+    margin-right: -20px;
+  }
+
+  .rt-summary-note-card,
+  .rt-totals-card {
+    display: table-cell;
+    vertical-align: top;
+  }
+
+  .rt-summary-note-card {
+    width: 56%;
   }
 
   .rt-notes {
     width: auto;
+    margin-top: 16px;
+  }
+
+  .rt-terms {
+    column-count: 2;
+    column-gap: 18px;
+    column-fill: balance;
   }
 
   .rt-terms,
@@ -624,12 +682,13 @@ PRINT_FORMAT_CSS = """
   .rt-totals-card {
     width: 44%;
     min-width: 260px;
-    margin: 16px 0 0 auto;
   }
 
   .rt-header,
   .rt-party-card,
   .rt-items,
+  .rt-summary-grid,
+  .rt-summary-note-card,
   .rt-totals-card,
   .rt-footer,
   .rt-meta-card,
