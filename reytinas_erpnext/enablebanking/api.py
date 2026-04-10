@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import frappe
@@ -118,7 +119,15 @@ def enablebanking_callback(code: str | None = None, state: str | None = None, er
     session_data = client.create_session(code)
 
     session = session_data.get("session") or session_data
-    accounts_payload = client.get_accounts(session["uid"])
+    session_id = _extract_session_id(session_data)
+    if not session_id:
+        frappe.log_error(
+            title=_("EnableBanking Session Payload Error"),
+            message=json.dumps(session_data, indent=2, default=str),
+        )
+        frappe.throw(_("EnableBanking did not return a usable session identifier"))
+
+    accounts_payload = client.get_accounts(session_id)
     accounts = accounts_payload.get("accounts") or accounts_payload.get("results") or []
     if not accounts:
         frappe.throw(_("EnableBanking returned no bank accounts for this authorization"))
@@ -129,7 +138,7 @@ def enablebanking_callback(code: str | None = None, state: str | None = None, er
             _("No EnableBanking account matched ERPNext bank account {0}").format(link.bank_account)
         )
 
-    link.session_id = session["uid"]
+    link.session_id = session_id
     link.session_valid_until = session.get("valid_until") or session.get("validUntil")
     link.account_uid = account.get("uid")
     link.identification_hash = account.get("identification_hash") or account.get("identificationHash")
@@ -151,6 +160,34 @@ def enablebanking_callback(code: str | None = None, state: str | None = None, er
     frappe.local.response["location"] = redirect_to
 
 
+def _extract_session_id(payload: dict[str, Any]) -> str | None:
+    candidates: list[Any] = []
+    session = payload.get("session")
+    if isinstance(session, dict):
+        candidates.extend(
+            [
+                session.get("uid"),
+                session.get("id"),
+                session.get("session_id"),
+                session.get("sessionId"),
+            ]
+        )
+
+    candidates.extend(
+        [
+            payload.get("uid"),
+            payload.get("id"),
+            payload.get("session_id"),
+            payload.get("sessionId"),
+        ]
+    )
+
+    for candidate in candidates:
+        if candidate:
+            return str(candidate)
+    return None
+
+
 def _match_account(bank_account_name: str, accounts: list[dict[str, Any]]) -> dict[str, Any] | None:
     bank_account = frappe.get_doc("Bank Account", bank_account_name)
     expected_iban = normalize_iban(bank_account.iban)
@@ -168,4 +205,3 @@ def _match_account(bank_account_name: str, accounts: list[dict[str, Any]]) -> di
     if len(accounts) == 1:
         return accounts[0]
     return None
-
