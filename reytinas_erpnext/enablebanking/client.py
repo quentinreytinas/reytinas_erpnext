@@ -16,12 +16,22 @@ class EnableBankingClient:
         self.base_url = settings.api_base_url.rstrip("/")
         self.timeout = int(settings.request_timeout or 30)
 
+    def _audience(self) -> str:
+        # EnableBanking validates aud against the API origin, not the full endpoint path.
+        if self.base_url.startswith("https://api.enablebanking.com"):
+            return "api.enablebanking.com"
+        if self.base_url.startswith("https://"):
+            return self.base_url.removeprefix("https://").split("/", 1)[0]
+        if self.base_url.startswith("http://"):
+            return self.base_url.removeprefix("http://").split("/", 1)[0]
+        return self.base_url.split("/", 1)[0]
+
     def _build_headers(self) -> dict[str, str]:
         issued_at = int(now_utc().timestamp())
         payload = {
             "iss": self.settings.application_id,
             "sub": self.settings.application_id,
-            "aud": self.base_url,
+            "aud": self._audience(),
             "iat": issued_at,
             "nbf": issued_at,
             "exp": issued_at + 300,
@@ -104,4 +114,3 @@ class EnableBankingClient:
         if continuation_key:
             params["continuation_key"] = continuation_key
         return self._request("GET", f"/accounts/{account_uid}/transactions", params=params)
-
