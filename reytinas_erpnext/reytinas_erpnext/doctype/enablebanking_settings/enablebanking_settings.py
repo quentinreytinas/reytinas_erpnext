@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -31,5 +33,5 @@ class EnableBankingSettings(Document):
 
     def get_default_valid_until_iso(self) -> str:
         days = int(self.authorization_valid_days or 90)
-        valid_until = now_utc() + frappe.utils.timedelta(days=days)
+        valid_until = now_utc() + timedelta(days=days)
         return valid_until.replace(microsecond=0).isoformat()
