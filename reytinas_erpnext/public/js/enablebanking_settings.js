@@ -5,7 +5,16 @@ frappe.ui.form.on("EnableBanking Settings", {
 		}
 
 		frm.add_custom_button(__("Connecter un compte bancaire"), async () => {
-			await openAuthorizationDialog(frm);
+			try {
+				await openAuthorizationDialog(frm);
+			} catch (error) {
+				console.error("EnableBanking dialog error", error);
+				frappe.msgprint({
+					title: __("Erreur EnableBanking"),
+					indicator: "red",
+					message: error.message || __("Impossible d'ouvrir l'assistant de connexion bancaire."),
+				});
+			}
 		});
 	},
 });
@@ -43,13 +52,17 @@ async function openAuthorizationDialog(frm) {
 			},
 			{
 				fieldname: "aspsp_name",
-				fieldtype: "Autocomplete",
+				fieldtype: "Select",
 				label: __("Banque"),
-				options: [],
+				options: "",
 				reqd: 1,
 				description: __("Charge les banques disponibles pour le pays et le type sélectionnés."),
 			},
 		],
+		secondary_action_label: __("Charger les banques"),
+		secondary_action: async () => {
+			await loadBanks(dialog);
+		},
 		primary_action_label: __("Lancer l'autorisation"),
 		primary_action: async (values) => {
 			if (!values.aspsp_name) {
@@ -92,10 +105,6 @@ async function openAuthorizationDialog(frm) {
 
 	dialog.enablebankingBanks = [];
 
-	dialog.set_secondary_action(__("Charger les banques"), async () => {
-		await loadBanks(dialog);
-	});
-
 	dialog.show();
 	await loadBanks(dialog);
 }
@@ -120,7 +129,8 @@ async function loadBanks(dialog) {
 	const bankNames = banks.map((item) => item.name).filter(Boolean);
 
 	dialog.enablebankingBanks = banks;
-	dialog.set_df_property("aspsp_name", "options", bankNames);
+	dialog.set_df_property("aspsp_name", "options", bankNames.join("\n"));
+	dialog.refresh();
 
 	if (bankNames.length === 1) {
 		dialog.set_value("aspsp_name", bankNames[0]);
