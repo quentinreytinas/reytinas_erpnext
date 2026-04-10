@@ -4,7 +4,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
-from reytinas_erpnext.enablebanking.utils import build_callback_url
+from reytinas_erpnext.enablebanking.utils import build_callback_url, now_utc
 
 
 class EnableBankingSettings(Document):
@@ -31,6 +31,5 @@ class EnableBankingSettings(Document):
 
     def get_default_valid_until_iso(self) -> str:
         days = int(self.authorization_valid_days or 90)
-        valid_until = frappe.utils.add_days(frappe.utils.now_datetime(), days)
+        valid_until = now_utc() + frappe.utils.timedelta(days=days)
         return valid_until.replace(microsecond=0).isoformat()
-

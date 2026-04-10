@@ -3,14 +3,14 @@ from __future__ import annotations
 import hashlib
 import re
 import secrets
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import frappe
 
 
 def now_utc() -> datetime:
-    return datetime.utcnow()
+    return datetime.now(timezone.utc)
 
 
 def get_site_url() -> str:
@@ -125,4 +125,3 @@ def extract_credit_debit_indicator(transaction: dict[str, Any]) -> str:
 def default_date_from(sync_days_back: int | None) -> str:
     days = int(sync_days_back or 30)
     return (date.today() - timedelta(days=days)).isoformat()
-
