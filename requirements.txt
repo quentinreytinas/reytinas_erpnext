@@ -1,1 +1,2 @@
 # Add Python dependencies for the custom app here.
+PyJWT>=2.8,<3

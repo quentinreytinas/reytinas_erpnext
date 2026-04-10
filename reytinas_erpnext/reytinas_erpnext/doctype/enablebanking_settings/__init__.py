@@ -1,0 +1,2 @@
+"""EnableBanking Settings DocType."""
+

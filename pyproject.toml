@@ -17,7 +17,7 @@ dynamic = ["dependencies"]
 include-package-data = true
 
 [tool.setuptools.package-data]
-reytinas_erpnext = ["modules.txt"]
+reytinas_erpnext = ["modules.txt", "**/*.json", "**/*.html", "**/*.csv", "**/*.txt"]
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }

@@ -1,0 +1,218 @@
+{
+ "actions": [],
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "status",
+  "company",
+  "bank_account",
+  "psu_type",
+  "bank_section",
+  "aspsp_name",
+  "aspsp_country",
+  "aspsp_id",
+  "authorization_section",
+  "authorization_state",
+  "authorization_url",
+  "session_id",
+  "session_valid_until",
+  "account_section",
+  "account_uid",
+  "identification_hash",
+  "account_iban",
+  "account_name",
+  "currency",
+  "sync_section",
+  "last_sync_at",
+  "last_transaction_date",
+  "last_error_code",
+  "last_error_message"
+ ],
+ "fields": [
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "default": "Pending Authorization",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending Authorization\nActive\nExpired\nError",
+   "reqd": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "bank_account",
+   "fieldtype": "Link",
+   "label": "Bank Account",
+   "options": "Bank Account",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "business",
+   "fieldname": "psu_type",
+   "fieldtype": "Select",
+   "label": "PSU Type",
+   "options": "business\npersonal"
+  },
+  {
+   "fieldname": "bank_section",
+   "fieldtype": "Section Break",
+   "label": "Bank"
+  },
+  {
+   "fieldname": "aspsp_name",
+   "fieldtype": "Data",
+   "label": "ASPSP Name"
+  },
+  {
+   "fieldname": "aspsp_country",
+   "fieldtype": "Data",
+   "label": "ASPSP Country"
+  },
+  {
+   "fieldname": "aspsp_id",
+   "fieldtype": "Data",
+   "label": "ASPSP ID"
+  },
+  {
+   "fieldname": "authorization_section",
+   "fieldtype": "Section Break",
+   "label": "Authorization"
+  },
+  {
+   "fieldname": "authorization_state",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Authorization State"
+  },
+  {
+   "fieldname": "authorization_url",
+   "fieldtype": "Small Text",
+   "label": "Authorization URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "session_id",
+   "fieldtype": "Data",
+   "label": "Session ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "session_valid_until",
+   "fieldtype": "Datetime",
+   "label": "Session Valid Until",
+   "read_only": 1
+  },
+  {
+   "fieldname": "account_section",
+   "fieldtype": "Section Break",
+   "label": "Account"
+  },
+  {
+   "fieldname": "account_uid",
+   "fieldtype": "Data",
+   "label": "Account UID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "identification_hash",
+   "fieldtype": "Data",
+   "label": "Identification Hash",
+   "read_only": 1
+  },
+  {
+   "fieldname": "account_iban",
+   "fieldtype": "Data",
+   "label": "Account IBAN",
+   "read_only": 1
+  },
+  {
+   "fieldname": "account_name",
+   "fieldtype": "Data",
+   "label": "Account Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sync_section",
+   "fieldtype": "Section Break",
+   "label": "Sync"
+  },
+  {
+   "fieldname": "last_sync_at",
+   "fieldtype": "Datetime",
+   "label": "Last Sync At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_transaction_date",
+   "fieldtype": "Date",
+   "label": "Last Transaction Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_error_code",
+   "fieldtype": "Data",
+   "label": "Last Error Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_error_message",
+   "fieldtype": "Small Text",
+   "label": "Last Error Message",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "module": "Reytinas ERPNext",
+ "name": "EnableBanking Account Link",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "bank_account,aspsp_name,account_iban",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "bank_account"
+}

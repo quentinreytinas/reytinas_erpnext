@@ -1,0 +1,115 @@
+{
+ "actions": [],
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "field_order": [
+  "general_section",
+  "enabled",
+  "api_base_url",
+  "request_timeout",
+  "credentials_section",
+  "application_id",
+  "key_id",
+  "private_key",
+  "redirect_section",
+  "redirect_url",
+  "authorization_valid_days",
+  "sync_days_back"
+ ],
+ "fields": [
+  {
+   "fieldname": "general_section",
+   "fieldtype": "Section Break",
+   "label": "General"
+  },
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enable EnableBanking Sync"
+  },
+  {
+   "default": "https://api.enablebanking.com",
+   "description": "Base URL for the EnableBanking API environment.",
+   "fieldname": "api_base_url",
+   "fieldtype": "Data",
+   "label": "API Base URL",
+   "reqd": 1
+  },
+  {
+   "default": "30",
+   "fieldname": "request_timeout",
+   "fieldtype": "Int",
+   "label": "Request Timeout (seconds)"
+  },
+  {
+   "fieldname": "credentials_section",
+   "fieldtype": "Section Break",
+   "label": "Credentials"
+  },
+  {
+   "fieldname": "application_id",
+   "fieldtype": "Data",
+   "label": "Application ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "key_id",
+   "fieldtype": "Data",
+   "label": "Key ID",
+   "reqd": 1
+  },
+  {
+   "description": "Paste the PEM-encoded RSA private key used to sign EnableBanking JWT requests.",
+   "fieldname": "private_key",
+   "fieldtype": "Password",
+   "label": "Private Key",
+   "reqd": 1
+  },
+  {
+   "fieldname": "redirect_section",
+   "fieldtype": "Section Break",
+   "label": "Authorization"
+  },
+  {
+   "fieldname": "redirect_url",
+   "fieldtype": "Data",
+   "label": "Redirect URL",
+   "read_only": 1
+  },
+  {
+   "default": "90",
+   "fieldname": "authorization_valid_days",
+   "fieldtype": "Int",
+   "label": "Authorization Validity (days)"
+  },
+  {
+   "default": "30",
+   "fieldname": "sync_days_back",
+   "fieldtype": "Int",
+   "label": "Initial Sync Days Back"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "module": "Reytinas ERPNext",
+ "name": "EnableBanking Settings",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

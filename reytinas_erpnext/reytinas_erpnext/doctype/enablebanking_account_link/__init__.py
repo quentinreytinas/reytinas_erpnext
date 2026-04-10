@@ -1,0 +1,2 @@
+"""EnableBanking Account Link DocType."""
+
