@@ -8,6 +8,10 @@ app_version = "0.4.0"
 
 required_apps = ["erpnext"]
 
+doctype_js = {
+    "EnableBanking Settings": "public/js/enablebanking_settings.js",
+}
+
 after_install = [
     "reytinas_erpnext.print_formats.sync_print_formats",
     "reytinas_erpnext.naming.sync_naming_series_property_setters",
