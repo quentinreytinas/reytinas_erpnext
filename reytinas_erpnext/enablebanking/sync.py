@@ -66,7 +66,7 @@ def disable_expired_links() -> None:
 
 
 @frappe.whitelist()
-def sync_link(link_name: str) -> dict[str, Any]:
+def sync_link(link_name: str, full_refresh: int | str = 0) -> dict[str, Any]:
     link = frappe.get_doc("EnableBanking Account Link", link_name)
     if not link.enabled:
         frappe.throw(_("EnableBanking link {0} is disabled").format(link.name))
@@ -75,7 +75,7 @@ def sync_link(link_name: str) -> dict[str, Any]:
 
     settings = get_settings()
     client = EnableBankingClient(settings)
-    imported = import_transactions(client, link)
+    imported = import_transactions(client, link, full_refresh=frappe.utils.cint(full_refresh))
     link.last_sync_at = now_db()
     link.last_error_code = None
     link.last_error_message = None
@@ -91,10 +91,10 @@ def sync_link(link_name: str) -> dict[str, Any]:
     return imported
 
 
-def import_transactions(client: EnableBankingClient, link) -> dict[str, Any]:
+def import_transactions(client: EnableBankingClient, link, full_refresh: int = 0) -> dict[str, Any]:
     date_from = (
         str(link.last_transaction_date)
-        if link.last_transaction_date
+        if link.last_transaction_date and not full_refresh
         else default_date_from(get_settings().sync_days_back)
     )
     continuation_key = None
