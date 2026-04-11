@@ -120,6 +120,10 @@ def import_transactions(client: EnableBankingClient, link) -> dict[str, Any]:
     return {"imported_count": imported, "latest_booking_date": latest_booking_date}
 
 
+def _as_dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
 def create_bank_transaction(link, transaction: dict[str, Any]) -> tuple[bool, Any]:
     transaction_key = compute_transaction_key(link.name, transaction)
     if frappe.db.exists(
@@ -139,11 +143,15 @@ def create_bank_transaction(link, transaction: dict[str, Any]) -> tuple[bool, An
         or transaction.get("reference_number")
         or transaction.get("referenceNumber")
     )
+    debtor_account = _as_dict(transaction.get("debtor_account") or transaction.get("debtorAccount"))
+    creditor_account = _as_dict(transaction.get("creditor_account") or transaction.get("creditorAccount"))
+    debtor = _as_dict(transaction.get("debtor"))
+    creditor = _as_dict(transaction.get("creditor"))
     bank_party_iban = normalize_iban(
         transaction.get("counterparty_iban")
         or transaction.get("counterpartyIban")
-        or transaction.get("debtor_account", {}).get("iban")
-        or transaction.get("creditor_account", {}).get("iban")
+        or debtor_account.get("iban")
+        or creditor_account.get("iban")
     )
     bank_party_name = (
         transaction.get("counterparty_name")
@@ -152,6 +160,8 @@ def create_bank_transaction(link, transaction: dict[str, Any]) -> tuple[bool, An
         or transaction.get("debtorName")
         or transaction.get("creditor_name")
         or transaction.get("creditorName")
+        or debtor.get("name")
+        or creditor.get("name")
     )
 
     doc = frappe.get_doc(
@@ -186,4 +196,3 @@ def create_bank_transaction(link, transaction: dict[str, Any]) -> tuple[bool, An
     doc.insert(ignore_permissions=True)
     doc.submit()
     return True, booking_date
-
