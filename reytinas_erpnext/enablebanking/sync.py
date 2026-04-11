@@ -219,6 +219,9 @@ def update_bank_transaction(
     currency: str | None,
 ) -> None:
     doc = frappe.get_doc("Bank Transaction", name)
+    if doc.docstatus == 1:
+        return
+
     changed = False
 
     fields = {
