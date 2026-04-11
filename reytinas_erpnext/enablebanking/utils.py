@@ -127,6 +127,11 @@ def extract_currency(transaction: dict[str, Any], fallback: str | None = None) -
 
 
 def extract_description(transaction: dict[str, Any]) -> str:
+    remittance_lines = extract_remittance_lines(transaction)
+    cleaned = _clean_wise_description(remittance_lines)
+    if cleaned:
+        return cleaned
+
     parts = [
         transaction.get("remittance_information_unstructured"),
         transaction.get("remittanceInformationUnstructured"),
@@ -137,6 +142,90 @@ def extract_description(transaction: dict[str, Any]) -> str:
     ]
     values = [str(part).strip() for part in parts if part]
     return " | ".join(dict.fromkeys(values))
+
+
+def extract_remittance_lines(transaction: dict[str, Any]) -> list[str]:
+    values: list[str] = []
+    raw = transaction.get("remittance_information") or transaction.get("remittanceInformation")
+    if isinstance(raw, list):
+        for item in raw:
+            text = str(item).strip()
+            if text:
+                values.append(text)
+    elif raw:
+        text = str(raw).strip()
+        if text:
+            values.append(text)
+
+    for key in (
+        "remittance_information_unstructured",
+        "remittanceInformationUnstructured",
+        "additional_information",
+        "additionalInformation",
+    ):
+        value = transaction.get(key)
+        if value:
+            text = str(value).strip()
+            if text:
+                values.append(text)
+
+    return list(dict.fromkeys(values))
+
+
+def extract_counterparty_name(transaction: dict[str, Any]) -> str:
+    parties = [
+        transaction.get("counterparty_name"),
+        transaction.get("counterpartyName"),
+        transaction.get("debtor_name"),
+        transaction.get("debtorName"),
+        transaction.get("creditor_name"),
+        transaction.get("creditorName"),
+    ]
+    for value in parties:
+        if value:
+            return str(value).strip()
+
+    for party_key in ("debtor", "creditor"):
+        party = transaction.get(party_key)
+        if isinstance(party, dict) and party.get("name"):
+            return str(party["name"]).strip()
+
+    remittance_lines = extract_remittance_lines(transaction)
+    for line in remittance_lines:
+        lowered = line.lower()
+        if lowered.startswith("sent money to "):
+            return line[14:].strip()
+        if " issued by " in lowered:
+            return re.split(r" issued by ", line, flags=re.IGNORECASE)[-1].strip()
+    return ""
+
+
+def _clean_wise_description(lines: list[str]) -> str:
+    if not lines:
+        return ""
+
+    for line in lines:
+        lowered = line.lower()
+        if lowered.startswith("card transaction of ") and " issued by " in lowered:
+            merchant = re.split(r" issued by ", line, flags=re.IGNORECASE)[-1].strip()
+            if merchant:
+                return f"Card purchase - {merchant}"
+        if lowered.startswith("sent money to "):
+            recipient = line[14:].strip()
+            if recipient:
+                return f"Transfer sent - {recipient}"
+        if lowered == "cashback":
+            return "Cashback"
+
+    non_code_lines = [
+        line
+        for line in lines
+        if not re.match(r"^[A-Z_]+-\d", line)
+        and not re.match(r"^\d+\.[A-Z_]+-\d", line)
+    ]
+    if non_code_lines:
+        return non_code_lines[0]
+    return lines[0]
 
 
 def extract_credit_debit_indicator(transaction: dict[str, Any]) -> str:

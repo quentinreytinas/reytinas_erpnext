@@ -10,6 +10,7 @@ from reytinas_erpnext.enablebanking.utils import (
     compute_transaction_key,
     default_date_from,
     extract_amount,
+    extract_counterparty_name,
     extract_credit_debit_indicator,
     extract_currency,
     extract_description,
@@ -127,12 +128,6 @@ def _as_dict(value: Any) -> dict[str, Any]:
 
 def create_bank_transaction(link, transaction: dict[str, Any]) -> tuple[bool, Any]:
     transaction_key = compute_transaction_key(link.name, transaction)
-    if frappe.db.exists(
-        "Bank Transaction",
-        {"bank_account": link.bank_account, "transaction_id": transaction_key},
-    ):
-        return False, pick_transaction_date(transaction)
-
     indicator = extract_credit_debit_indicator(transaction)
     amount = extract_amount(transaction)
     booking_date = pick_transaction_date(transaction) or frappe.utils.getdate()
@@ -146,24 +141,40 @@ def create_bank_transaction(link, transaction: dict[str, Any]) -> tuple[bool, An
     )
     debtor_account = _as_dict(transaction.get("debtor_account") or transaction.get("debtorAccount"))
     creditor_account = _as_dict(transaction.get("creditor_account") or transaction.get("creditorAccount"))
-    debtor = _as_dict(transaction.get("debtor"))
-    creditor = _as_dict(transaction.get("creditor"))
     bank_party_iban = normalize_iban(
         transaction.get("counterparty_iban")
         or transaction.get("counterpartyIban")
         or debtor_account.get("iban")
         or creditor_account.get("iban")
     )
-    bank_party_name = (
-        transaction.get("counterparty_name")
-        or transaction.get("counterpartyName")
-        or transaction.get("debtor_name")
-        or transaction.get("debtorName")
-        or transaction.get("creditor_name")
-        or transaction.get("creditorName")
-        or debtor.get("name")
-        or creditor.get("name")
+    bank_party_name = extract_counterparty_name(transaction)
+    bank_code = (
+        (transaction.get("bank_transaction_code") or {}).get("code")
+        or (transaction.get("bankTransactionCode") or {}).get("code")
     )
+    transaction_type = (
+        (transaction.get("bank_transaction_code") or {}).get("description")
+        or (transaction.get("bankTransactionCode") or {}).get("description")
+        or bank_code
+        or transaction.get("proprietary_bank_transaction_code")
+        or transaction.get("proprietaryBankTransactionCode")
+        or "EnableBanking Import"
+    )
+    existing_name = frappe.db.exists(
+        "Bank Transaction",
+        {"bank_account": link.bank_account, "transaction_id": transaction_key},
+    )
+    if existing_name:
+        update_bank_transaction(
+            existing_name,
+            description=description,
+            transaction_type=transaction_type,
+            bank_party_name=bank_party_name,
+            bank_party_iban=bank_party_iban,
+            reference_number=reference_number,
+            currency=currency,
+        )
+        return False, booking_date
 
     doc = frappe.get_doc(
         {
@@ -175,9 +186,7 @@ def create_bank_transaction(link, transaction: dict[str, Any]) -> tuple[bool, An
             "description": description,
             "reference_number": reference_number,
             "transaction_id": transaction_key,
-            "transaction_type": transaction.get("proprietary_bank_transaction_code")
-            or transaction.get("proprietaryBankTransactionCode")
-            or "EnableBanking Import",
+            "transaction_type": transaction_type,
             "bank_party_name": bank_party_name,
             "bank_party_iban": bank_party_iban,
         }
@@ -197,3 +206,33 @@ def create_bank_transaction(link, transaction: dict[str, Any]) -> tuple[bool, An
     doc.insert(ignore_permissions=True)
     doc.submit()
     return True, booking_date
+
+
+def update_bank_transaction(
+    name: str,
+    *,
+    description: str,
+    transaction_type: str,
+    bank_party_name: str,
+    bank_party_iban: str,
+    reference_number: str | None,
+    currency: str | None,
+) -> None:
+    doc = frappe.get_doc("Bank Transaction", name)
+    changed = False
+
+    fields = {
+        "description": description,
+        "transaction_type": transaction_type,
+        "bank_party_name": bank_party_name,
+        "bank_party_iban": bank_party_iban,
+        "reference_number": reference_number,
+        "currency": currency,
+    }
+    for fieldname, value in fields.items():
+        if value and doc.get(fieldname) != value:
+            doc.set(fieldname, value)
+            changed = True
+
+    if changed:
+        doc.save(ignore_permissions=True)
