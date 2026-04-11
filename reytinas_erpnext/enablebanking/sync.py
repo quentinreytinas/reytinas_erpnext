@@ -219,11 +219,6 @@ def update_bank_transaction(
     currency: str | None,
 ) -> None:
     doc = frappe.get_doc("Bank Transaction", name)
-    if doc.docstatus == 1:
-        return
-
-    changed = False
-
     fields = {
         "description": description,
         "transaction_type": transaction_type,
@@ -232,10 +227,23 @@ def update_bank_transaction(
         "reference_number": reference_number,
         "currency": currency,
     }
-    for fieldname, value in fields.items():
-        if value and doc.get(fieldname) != value:
-            doc.set(fieldname, value)
-            changed = True
+    changed_fields = {
+        fieldname: value
+        for fieldname, value in fields.items()
+        if value and doc.get(fieldname) != value
+    }
+    if not changed_fields:
+        return
 
-    if changed:
-        doc.save(ignore_permissions=True)
+    if doc.docstatus == 1:
+        frappe.db.set_value(
+            "Bank Transaction",
+            name,
+            changed_fields,
+            update_modified=False,
+        )
+        return
+
+    for fieldname, value in changed_fields.items():
+        doc.set(fieldname, value)
+    doc.save(ignore_permissions=True)
