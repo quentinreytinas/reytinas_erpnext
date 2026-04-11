@@ -127,10 +127,13 @@ def enablebanking_callback(code: str | None = None, state: str | None = None, er
         )
         frappe.throw(_("EnableBanking did not return a usable session identifier"))
 
-    accounts_payload = client.get_accounts(session_id)
-    accounts = accounts_payload.get("accounts") or accounts_payload.get("results") or []
+    accounts = session_data.get("accounts") or session.get("accounts") or session_data.get("results") or []
     if not accounts:
-        frappe.throw(_("EnableBanking returned no bank accounts for this authorization"))
+        frappe.log_error(
+            title=_("EnableBanking Accounts Missing In Session Payload"),
+            message=json.dumps(session_data, indent=2, default=str),
+        )
+        frappe.throw(_("EnableBanking did not return bank accounts in the session response"))
 
     account = _match_account(link.bank_account, accounts)
     if not account:
