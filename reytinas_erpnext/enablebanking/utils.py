@@ -44,6 +44,17 @@ PERSONAL_COUNTERPARTY_PATTERNS = (
     re.compile(r"\A(?:M|MME)\s+OU\s+(?:M|MME)\b", re.IGNORECASE),
     re.compile(r"\A(?:MR|MRS|MS)\b", re.IGNORECASE),
 )
+EXPANDED_BANKING_ACTION_PATTERNS = (
+    re.compile(r"\bpr[eé]l[eè]vement\b", re.IGNORECASE),
+    re.compile(r"\bvirement\b", re.IGNORECASE),
+)
+ABBREVIATED_BANKING_HEADER_PATTERNS = (
+    re.compile(r"\A(?:PRLV|VIR)\b", re.IGNORECASE),
+)
+WITHDRAWAL_DESCRIPTION_PATTERN = re.compile(
+    r"\A(?:RETRAIT|WITHDRAWAL|ATM)\b.*?\b\d{4}\s+(.+)\Z",
+    re.IGNORECASE,
+)
 
 
 def now_utc() -> datetime:
@@ -321,6 +332,9 @@ def _resolve_transaction_name(
 ) -> str:
     description_text = str(description).strip() if description else ""
     if description_text:
+        withdrawal_name = _withdrawal_name_candidate(description_text, remittance_name)
+        if withdrawal_name:
+            return withdrawal_name
         if _prefer_remittance_name(description_text, remittance_name):
             return remittance_name
         return description_text
@@ -417,6 +431,10 @@ def _prefer_remittance_name(description: str, remittance_name: str) -> bool:
         return True
     if _is_technical_description(description) and _is_descriptive_phrase(remittance_name):
         return True
+    if _is_descriptive_phrase(remittance_name) and (
+        _has_expanded_banking_action(remittance_name) or _has_abbreviated_banking_header(description)
+    ):
+        return True
     return (
         _informativeness_score(remittance_name) >= _informativeness_score(description) + 4
         and _technicality_score(remittance_name) <= _technicality_score(description)
@@ -427,6 +445,10 @@ def _remittance_candidate_score(value: str) -> int:
     score = _informativeness_score(value) - _technicality_score(value)
     if _is_descriptive_phrase(value):
         score += 6
+    if _has_expanded_banking_action(value):
+        score += 3
+    if _has_abbreviated_banking_header(value):
+        score -= 2
     return score
 
 
@@ -449,9 +471,44 @@ def _is_generic_card_header(value: str) -> bool:
     return any(pattern.match(text) for pattern in GENERIC_CARD_PAYMENT_PATTERNS) if text else False
 
 
+def _has_expanded_banking_action(value: str) -> bool:
+    text = value.strip() if value else ""
+    return any(pattern.search(text) for pattern in EXPANDED_BANKING_ACTION_PATTERNS) if text else False
+
+
+def _has_abbreviated_banking_header(value: str) -> bool:
+    text = value.strip() if value else ""
+    return any(pattern.match(text) for pattern in ABBREVIATED_BANKING_HEADER_PATTERNS) if text else False
+
+
 def _looks_personal(value: str) -> bool:
     text = value.strip() if value else ""
     return any(pattern.match(text) for pattern in PERSONAL_COUNTERPARTY_PATTERNS) if text else False
+
+
+def _withdrawal_name_candidate(description: str, remittance_name: str) -> str:
+    if not description or not remittance_name:
+        return ""
+
+    match = WITHDRAWAL_DESCRIPTION_PATTERN.match(description.strip())
+    if not match:
+        return ""
+
+    location = match.group(1).strip()
+    candidate = remittance_name.strip()
+    if not location or not candidate:
+        return ""
+    if re.match(r"\A(?:RETRAIT|WITHDRAWAL|ATM)\b", candidate, re.IGNORECASE):
+        return ""
+    if _is_reference_like(candidate):
+        return ""
+    if location.lower() in candidate.lower():
+        return ""
+    if _technicality_score(candidate) >= 7:
+        return ""
+
+    prefix = description.strip().split()[0].upper()
+    return f"{prefix} {location} {candidate}".strip()
 
 
 def _is_descriptive_phrase(value: str) -> bool:
