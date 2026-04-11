@@ -14,6 +14,7 @@ from reytinas_erpnext.enablebanking.utils import (
     extract_currency,
     extract_description,
     normalize_iban,
+    now_db,
     now_utc,
     pick_transaction_date,
 )
@@ -74,7 +75,7 @@ def sync_link(link_name: str) -> dict[str, Any]:
     settings = get_settings()
     client = EnableBankingClient(settings)
     imported = import_transactions(client, link)
-    link.last_sync_at = now_utc()
+    link.last_sync_at = now_db()
     link.last_error_code = None
     link.last_error_message = None
     if imported["latest_booking_date"]:

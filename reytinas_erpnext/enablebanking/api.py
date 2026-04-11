@@ -13,6 +13,7 @@ from reytinas_erpnext.enablebanking.utils import (
     generate_state_token,
     get_site_url,
     normalize_iban,
+    to_db_datetime,
 )
 
 
@@ -142,7 +143,9 @@ def enablebanking_callback(code: str | None = None, state: str | None = None, er
         )
 
     link.session_id = session_id
-    link.session_valid_until = session.get("valid_until") or session.get("validUntil")
+    link.session_valid_until = to_db_datetime(
+        session.get("valid_until") or session.get("validUntil")
+    )
     link.account_uid = account.get("uid")
     link.identification_hash = account.get("identification_hash") or account.get("identificationHash")
     link.account_iban = normalize_iban(

@@ -13,6 +13,31 @@ def now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def now_db() -> datetime:
+    return frappe.utils.now_datetime()
+
+
+def to_db_datetime(value: Any) -> datetime | None:
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        if value.tzinfo is not None:
+            return value.astimezone(timezone.utc).replace(tzinfo=None)
+        return value
+
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return frappe.utils.get_datetime(text)
+
+    if parsed.tzinfo is not None:
+        return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+    return parsed
+
+
 def get_site_url() -> str:
     return frappe.utils.get_url().rstrip("/")
 
